@@ -1,5 +1,7 @@
 const express = require('express')
 const router = express.Router()
+const validateUser = require('../middlewares').validateUser
+
 
 let id = 3;
 
@@ -33,19 +35,23 @@ function addUser(user) {
     id += 1;
     return newUser
 }
-function editUser(user) {
+function editUser(id, userData) {
+    const oldUser = getUser(id)
+    console.log(oldUser)
+    if (!oldUser) return false;
     const newUser = {
-        ...user,
-        ...req.body
+        ...oldUser,
+        ...userData
     }
     usersData = usersData.map(user => user.id == newUser.id ? newUser : user)
+    return true
 }
 
 router
     .get('/', (req, res) => {
         return res.status(200).json(usersData)
     })
-    .post('/', (req, res) => {
+    .post('/', validateUser, (req, res) => {
         const user = addUser(req.body)
         return res.status(201).json(user)
     })
@@ -64,10 +70,9 @@ router
         }
         return res.status(404).send('User not found')
     })
-    .put('/:id', (req, res) => {
-        const user = getUser(req.params.id)
+    .put('/:id', validateUser, (req, res) => {
+        const user = editUser(req.params.id, req.body)
         if (user) {
-            const newUser = editUser(req.body)
             return res.status(204).send()
         }
         return res.status(404).send('User not found')
