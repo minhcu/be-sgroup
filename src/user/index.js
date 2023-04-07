@@ -37,7 +37,6 @@ function addUser(user) {
 }
 function editUser(id, userData) {
     const oldUser = getUser(id)
-    console.log(oldUser)
     if (!oldUser) return false;
     const newUser = {
         ...oldUser,

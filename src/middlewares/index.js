@@ -1,6 +1,6 @@
 function validateUser(req, res, next) {
     const { fullname, age } = req.body
-    const regex = RegExp(/^[a-zA-Z ]*$/)
+    const regex = RegExp(/^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ ]+$/)
 
     if (!fullname || !age) {
         return res.status(400).send('Thiếu tên hoặc tuổi!')
