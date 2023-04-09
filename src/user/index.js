@@ -1,55 +1,54 @@
 const express = require('express')
+
 const router = express.Router()
-const validateUser = require('../middlewares').validateUser
+const { validateUser } = require('../middlewares')
 
-
-let id = 3;
+let id = 3
 
 let usersData = [
-	{
-		"id": 1,
-		"fullname": "Minh Dong",
-		"gender": true,
-		"age": 18
-	},
-	{
-		"id": 2,
-		"fullname": "Minh Cu",
-		"gender": false,
-		"age": 15
-	}
+    {
+        id: 1,
+        fullname: 'Minh Dong',
+        gender: true,
+        age: 18,
+    },
+    {
+        id: 2,
+        fullname: 'Minh Cu',
+        gender: false,
+        age: 15,
+    },
 ]
 
-function getUser(id) {
-    return usersData.find(user => user.id == id)
+function getUser(userID) {
+    return usersData.find((user) => user.id === userID)
 }
-function deleteUser(id) {
-    return usersData = usersData.filter(user => user.id != id)
+function deleteUser(userID) {
+    usersData = usersData.filter((user) => user.id !== userID)
+    return true
 }
 function addUser(user) {
     const newUser = {
         id,
-        ...user
+        ...user,
     }
     usersData.push(newUser)
-    id += 1;
+    id += 1
     return newUser
 }
-function editUser(id, userData) {
-    const oldUser = getUser(id)
-    if (!oldUser) return false;
+function editUser(userID, userData) {
+    const oldUser = getUser(userID)
+    if (!oldUser) return false
     const newUser = {
         ...oldUser,
-        ...userData
+        ...userData,
     }
-    usersData = usersData.map(user => user.id == newUser.id ? newUser : user)
+    usersData = usersData.map((user) => (user.id === newUser.id ? newUser : user))
     return true
 }
 
 router
-    .get('/', (req, res) => {
-        return res.status(200).json(usersData)
-    })
+    .get('/', (req, res) => res.status(200).json(usersData))
     .post('/', validateUser, (req, res) => {
         const user = addUser(req.body)
         return res.status(201).json(user)

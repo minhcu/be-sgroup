@@ -1,20 +1,17 @@
 const express = require('express')
+
 const app = express()
 const port = 3000
 
-const userRoute = require('./src/user')
+const userRoute = require('./user')
 
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
-
 app.use('/user', userRoute)
 
-app.use('/', (req, res) => {
-  return res.send('Hello World!')
-})
-
+app.use('/', (req, res) => res.send('Hello World!'))
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+    console.log(`Example app listening on port ${port}`)
 })
