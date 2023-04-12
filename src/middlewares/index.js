@@ -1,14 +1,14 @@
 function validateUser(req, res, next) {
-    const { fullname, age } = req.body
+    const { fullName, age } = req.body
     const regex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ ]+$/
 
-    if (!fullname || !age) {
+    if (!fullName || !age) {
         return res.status(400).send('Thiếu tên hoặc tuổi!')
     }
-    if (typeof fullname !== 'string') {
+    if (typeof fullName !== 'string') {
         return res.status(400).send('Tên chưa đúng!')
     }
-    if (!regex.test(fullname)) {
+    if (!regex.test(fullName)) {
         return res.status(400).send('Tên không hợp lệ!')
     }
     if (typeof age !== 'number') {
