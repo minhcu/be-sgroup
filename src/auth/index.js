@@ -3,7 +3,6 @@ const webtoken = require('jsonwebtoken')
 const db = require('../database/connection')
 const { saltHash } = require('./helpers/hash')
 const { validateRegister, validateLogin } = require('../middlewares')
-require('dotenv').config() // App can't read .env file without this line althought it is called in app.js
 
 const router = express.Router()
 
@@ -43,6 +42,7 @@ router.post('/register', validateRegister, async (req, res) => {
 
 router.post('/login', validateLogin, async (req, res) => {
     const { username, password } = req.body
+    const { key } = req
     db.query(
         'SELECT * from users where username = ?',
         username,
@@ -54,7 +54,20 @@ router.post('/login', validateLogin, async (req, res) => {
             if (hashedPassword !== data[0].password) {
                 return res.status(401).json('Input incorrect')
             }
-            const token = webtoken.sign({ id: data[0].id }, process.env.SECRET_KEY)
+
+            const user = data[0]
+            const payload = {
+                username: user.username,
+                name: user.name,
+                email: user.email,
+                age: user.age,
+                gender: user.gender,
+            }
+            const token = webtoken.sign(payload, key, {
+                algorithm: 'HS256',
+                expiresIn: '1d',
+                issuer: 'localhost',
+            })
             return res.status(200).json({ token })
         },
     )
