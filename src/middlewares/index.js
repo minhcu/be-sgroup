@@ -47,7 +47,15 @@ function validateLogin(req, res, next) {
     return next()
 }
 
+function validateEmailPass(req, res, next) {
+    const { email } = req.body
+    const validate = validateEmail(email)
+    if (!validate) return res.status(400).send('Invalid input')
+    return next()
+}
+
 module.exports = {
+    validateEmailPass,
     validateUser,
     validateRegister,
     validateLogin,
