@@ -68,8 +68,8 @@ router
             password: hashedPassword,
             salt,
             name: name ?? username,
-            gender,
-            age,
+            gender: gender ?? null,
+            age: age ?? null,
             createdBy,
         }
 
@@ -128,7 +128,12 @@ router
         })
     })
     .put('/:id', validateToken, validateUser, async (req, res) => {
-        const [data, err] = await updateOne('users', 'id', req.params.id, req.body)
+        const { name, gender, age } = req.body
+        const [data, err] = await updateOne('users', 'id', req.params.id, {
+            name,
+            gender,
+            age,
+        })
         handleResponse(res, data, err, {
             data: {
                 message: 'success',
