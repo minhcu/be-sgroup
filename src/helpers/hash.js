@@ -7,6 +7,12 @@ const saltHash = (password, salt) => {
     return { hashedPassword, salt }
 }
 
+const randomPassword = () => {
+    const string = crypto.randomBytes(8).toString('hex')
+    return string
+}
+
 module.exports = {
     saltHash,
+    randomPassword,
 }

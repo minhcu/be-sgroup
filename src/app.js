@@ -13,12 +13,9 @@ const userRoute = require('./user')
 const authRoute = require('./auth')
 
 app.use(express.json())
-// app.use(morgan('combined'))
 app.use(express.urlencoded({ extended: true }))
 
 function key(req, res, next) {
-    // req.privateKey = privateKey.toString('base64')
-    // req.publicKey = publicKey.toString('base64')
     req.key = 'secret'
     next()
 }
