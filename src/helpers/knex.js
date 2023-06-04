@@ -15,14 +15,7 @@ async function getOne(tableName, colName, condition) {
 
 // eslint-disable-next-line consistent-return
 async function getMany(tableName, limit = 2, offset = 0) {
-    // if (!offset) {
-    //     try {
-    //         const data = await knex.select.from(tableName).limit(limit)
-    //         return handleResponse(data, undefined)
-    //     } catch (err) {
-    //         return handleResponse(undefined, err)
-    //     }
-    // }
+    if (typeof limit !== 'number' || typeof offset !== 'number') return handleResponse(undefined, true)
     try {
         const data = await knex.select().from(tableName).limit(limit).offset(offset)
         return handleResponse(data, undefined)
