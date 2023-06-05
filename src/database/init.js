@@ -31,7 +31,12 @@ const create = `
         age INT unsigned,
         gender BOOLEAN,
         email VARCHAR(255),
+        passwordResetToken VARCHAR(255),
+        passwordResetExpiration DATETIME,
+        createdAt DATETIME,
+        createdBy INT,
         PRIMARY KEY (id),
+        FOREIGN KEY (createdBy) REFERENCES users(id),
         unique (username)
     );
 `
@@ -46,6 +51,7 @@ connection.query(
                 (insertErr, insertRes) => {
                     // eslint-disable-next-line no-console
                     if (insertRes) { console.log('Success') }
+                    if (insertErr) { console.log(insertErr) }
                 },
             )
         }

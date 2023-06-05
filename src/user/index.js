@@ -31,7 +31,7 @@ function handleResponse(res, data, err, json) {
 
 router
     .get('/', async (req, res) => {
-        const [data, err] = await getMany('users', req.query.limit, req.query.offset)
+        const [data, err] = await getMany('users', req.query.limit, req.query.page, req.query.query ?? req.query.q)
         handleResponse(res, data, err, {
             code: 200,
             data: {

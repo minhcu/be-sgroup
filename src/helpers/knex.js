@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 const knex = require('../database/connection')
 
 function handleResponse(data, err) {
@@ -13,11 +14,28 @@ async function getOne(tableName, colName, condition) {
     }
 }
 
-// eslint-disable-next-line consistent-return
-async function getMany(tableName, limit = 2, offset = 0) {
-    if (typeof limit !== 'number' || typeof offset !== 'number') return handleResponse(undefined, true)
+// eslint-disable-next-line consistent-return, default-param-last
+async function getMany(tableName, limit = 10, page = 0, query) {
+    if (typeof +limit !== 'number' || typeof +page !== 'number' || limit < 0 || page < 0) return handleResponse(undefined, true)
+    let offset = 0
+    if (page > 1) offset = limit * (page - 1)
+
     try {
-        const data = await knex.select().from(tableName).limit(limit).offset(offset)
+        let data
+        if (query.toString()) {
+            query = `%${query}%`
+            data = await knex.select().from(tableName).limit(limit).offset(offset)
+                // NOTEs: This should be dynamic
+                // eslint-disable-next-line func-names
+                .where(function () {
+                    this.where('username', 'like', query)
+                        .orWhere('name', 'like', query)
+                        .orWhere('age', 'like', query)
+                        .orWhere('email', 'like', query)
+                })
+        } else {
+            data = await knex.select().from(tableName).limit(limit).offset(offset)
+        }
         return handleResponse(data, undefined)
     } catch (err) {
         return handleResponse(undefined, err)

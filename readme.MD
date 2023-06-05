@@ -4,7 +4,7 @@
 2. Run `npm start`
 
 ## /users
-- GET /users?limit=?&offset=?
+- GET /users?(query || q)=?&limit=?&page=?
 ### /users/add
 - POST
 ```json
