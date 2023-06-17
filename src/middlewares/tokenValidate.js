@@ -1,5 +1,6 @@
 const jsonwebtoken = require('jsonwebtoken')
 
+// eslint-disable-next-line consistent-return
 function validateToken(req, res, next) {
     const { authorization } = req.headers
     if (authorization) {
@@ -9,17 +10,18 @@ function validateToken(req, res, next) {
             const isValid = jsonwebtoken.verify(token, key, {
                 algorithms: ['HS256'],
             })
-            if (isValid) next()
+            if (isValid) {
+                res.locals.userToken = isValid
+                return next()
+            }
         } catch (error) {
-            res.status(401).json({
-                message: 'Invalid token',
+            return res.status(401).json({
+                err: 'Invalid token',
             })
         }
-    } else {
-        res.status(401).json({
-            message: 'Invalid token',
-        })
-    }
+    } else return res.status(401).json({
+        err: 'Invalid token',
+    })
 }
 
 module.exports = { validateToken }

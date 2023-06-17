@@ -9,23 +9,21 @@ const router = express.Router()
 const { validateUser } = require('../middlewares')
 
 function validateRole(req, res, next) {
-    if (res.locals.decodedJWT.username !== 'assmin') {
-        return res.status(403).json({
-            code: 403,
-            error: 'Permisson denided',
-        })
-    }
+    if (res.locals.decodedJWT.username !== 'assmin') return res.status(403).json({
+        code: 403,
+        error: 'Permisson denided',
+    })
+
     return next()
 }
 
 // eslint-disable-next-line consistent-return
 function handleResponse(res, data, err, json) {
-    if (err) {
-        return res.status(500).json({
-            code: 500,
-            err: 'Internal Server Error',
-        })
-    }
+    if (err) return res.status(500).json({
+        code: 500,
+        err: 'Internal Server Error',
+    })
+
     if (data) return res.status(json.code).json(json)
 }
 
@@ -58,9 +56,8 @@ router
         handleResponse(res, undefined, err)
 
         createdBy = adminUser.id
-        if (!password) {
-            password = randomPassword()
-        }
+        if (!password) password = randomPassword()
+
         const { hashedPassword, salt } = saltHash(password)
 
         const newUser = {
@@ -93,12 +90,10 @@ router
                 data: user,
             },
         })
-        if (!user) {
-            return res.status(404).json({
-                code: 404,
-                err: 'User not found',
-            })
-        }
+        if (!user) return res.status(404).json({
+            code: 404,
+            err: 'User not found',
+        })
     })
     // eslint-disable-next-line consistent-return
     .delete('/:id', validateToken, async (req, res) => {
@@ -110,14 +105,10 @@ router
         })
 
         const { username } = res.locals.decodedJWT
-        if (user.username !== username) {
-            if (username !== 'assmin') {
-                return res.status(403).json({
-                    code: 403,
-                    error: 'Permission denided',
-                })
-            }
-        }
+        if (user.username !== username) if (username !== 'assmin') return res.status(403).json({
+            code: 403,
+            error: 'Permission denided',
+        })
 
         const [deletedUser, deletedError] = await deleteOne('users', 'id', req.params.id)
         handleResponse(res, true, deletedError, {

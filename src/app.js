@@ -11,6 +11,7 @@ const port = 3000
 
 const userRoute = require('./user')
 const authRoute = require('./auth')
+const pollRoute = require('./poll')
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -22,6 +23,7 @@ function key(req, res, next) {
 
 app.use('/auth', key, authRoute)
 app.use('/users', key, userRoute)
+app.use('/polls', key, pollRoute)
 
 app.use('/', (req, res) => res.send('Hello World!'))
 

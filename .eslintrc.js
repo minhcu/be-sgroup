@@ -13,5 +13,7 @@ module.exports = {
     rules: {
         semi: ['error', 'never'],
         indent: ['error', 4],
+        curly: ['error', 'multi'],
+        'arrow-parens': ['error', 'as-needed'],
     },
 }

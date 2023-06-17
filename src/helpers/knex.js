@@ -33,9 +33,8 @@ async function getMany(tableName, limit = 10, page = 0, query) {
                         .orWhere('age', 'like', query)
                         .orWhere('email', 'like', query)
                 })
-        } else {
-            data = await knex.select().from(tableName).limit(limit).offset(offset)
-        }
+        } else data = await knex.select().from(tableName).limit(limit).offset(offset)
+
         return handleResponse(data, undefined)
     } catch (err) {
         return handleResponse(undefined, err)
