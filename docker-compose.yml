@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  app_server:
+    image: pulled-docker-image-for-be-code
+    tty: true
+    container_name: be
+    ports:
+      - "4000:3000"
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - mysql
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=12345678
+      - DB_DATABASE=be
+      - SECRET_KEY=verysecretkey
+      - SMTP_SERVER=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=minhdong1831999@gmail.com
+      - SMTP_PASS=gqmtecmarzlouneq
+    networks:
+      - example-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: app-sql
+    restart: 'always'
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 12345678
+      MYSQL_DATABASE: be
+      TZ: UTC
+    ports:
+      - 3307:3306
+    volumes:
+      - ./docker/mysql/data:/var/lib/mysql
+    networks:
+      - example-network
+
+networks:
+  example-network:
+    driver: bridge
