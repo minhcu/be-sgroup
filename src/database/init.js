@@ -1,6 +1,6 @@
 require('dotenv').config()
 // eslint-disable-next-line import/no-extraneous-dependencies
-const mysql = require('mysql')
+const mysql = require('mysql2')
 // eslint-disable-next-line import/no-extraneous-dependencies
 require('dotenv').config()
 
@@ -11,7 +11,7 @@ const connection = mysql.createConnection({
     database: process.env.DB_DATABASE,
 })
 
-connection.connect((err) => {
+connection.connect(err => {
     if (err) {
         // eslint-disable-next-line no-console
         console.error(`error connecting: ${err.stack}`)
@@ -45,15 +45,13 @@ const insert = 'INSERT INTO users(id, username, password, name) values (1, "assm
 connection.query(
     create,
     (err, res) => {
-        if (res) {
-            connection.query(
-                insert,
-                (insertErr, insertRes) => {
-                    // eslint-disable-next-line no-console
-                    if (insertRes) { console.log('Success') }
-                    if (insertErr) { console.log(insertErr) }
-                },
-            )
-        }
+        if (res) connection.query(
+            insert,
+            (insertErr, insertRes) => {
+                // eslint-disable-next-line no-console
+                if (insertRes) console.log('Success')
+                if (insertErr) console.log(insertErr)
+            },
+        )
     },
 )
