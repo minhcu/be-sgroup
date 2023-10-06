@@ -11,7 +11,7 @@ function validateToken(req, res, next) {
                 algorithms: ['HS256'],
             })
             if (isValid) {
-                res.locals.userToken = isValid
+                res.locals.decodedJWT = isValid
                 return next()
             }
         } catch (error) {
