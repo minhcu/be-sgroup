@@ -5,6 +5,7 @@ const { saltHash } = require('../helpers/hash')
 const { validateRegister, validateLogin } = require('../middlewares')
 const { mailService } = require('../services/mail.service')
 const { validateEmailPass } = require('../middlewares')
+const { validateToken } = require('../middlewares/tokenValidate')
 
 const router = express.Router()
 
@@ -141,5 +142,7 @@ router.post('/login', validateLogin, async (req, res) => {
     })
     return res.status(200).json({ token, data })
 })
+
+router.post('/validate', validateToken)
 
 module.exports = router
