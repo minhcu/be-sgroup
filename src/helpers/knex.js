@@ -15,16 +15,24 @@ async function getOne(tableName, colName, condition) {
 }
 
 // eslint-disable-next-line consistent-return, default-param-last
-async function getMany(tableName, limit = 10, page = 0, query) {
-    if (typeof +limit !== 'number' || typeof +page !== 'number' || limit < 0 || page < 0) return handleResponse(undefined, true)
+async function getMany(tableName, limit = 10, page = 0, query, getCount) {
     let offset = 0
     if (page > 1) offset = limit * (page - 1)
+    query = query ? `%${query}%` : '%%'
 
     try {
-        let data
-        if (query.toString()) {
-            query = `%${query}%`
-            data = await knex.select().from(tableName).limit(limit).offset(offset)
+        let total
+        const items = await knex.select().from(tableName).limit(limit).offset(offset)
+        // NOTEs: This should be dynamic
+        // eslint-disable-next-line func-names
+            .where(function () {
+                this.where('username', 'like', query)
+                    .orWhere('name', 'like', query)
+                    .orWhere('age', 'like', query)
+                    .orWhere('email', 'like', query)
+            })
+        if (getCount) {
+            total = await knex.select().from(tableName).count()
                 // NOTEs: This should be dynamic
                 // eslint-disable-next-line func-names
                 .where(function () {
@@ -33,9 +41,13 @@ async function getMany(tableName, limit = 10, page = 0, query) {
                         .orWhere('age', 'like', query)
                         .orWhere('email', 'like', query)
                 })
-        } else data = await knex.select().from(tableName).limit(limit).offset(offset)
+            total = total[0]['count(*)']
+        }
 
-        return handleResponse(data, undefined)
+        return handleResponse({
+            items,
+            total,
+        }, undefined)
     } catch (err) {
         return handleResponse(undefined, err)
     }
@@ -59,9 +71,9 @@ async function updateOne(tableName, colName, condition, userData) {
     }
 }
 
-async function insertOne(tableName, dataObj) {
+async function insert(tableName, dataObj) {
     try {
-        const data = await knex.from(tableName).insert(dataObj)
+        const data = await knex(tableName).insert(dataObj)
         return handleResponse(data, undefined)
     } catch (err) {
         return handleResponse(undefined, err)
@@ -73,5 +85,5 @@ module.exports = {
     getMany,
     deleteOne,
     updateOne,
-    insertOne,
+    insert,
 }
