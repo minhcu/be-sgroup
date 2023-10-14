@@ -14,11 +14,21 @@ function validatePassword(password, confirmPassword) {
 
 function validateUser(req, res, next) {
     const { name, age } = req.body
-    const regex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ ]+$/
+    const { email } = req.body
+    const { gender } = req.body
+    let validate = true
+    // eslint-disable-next-line max-len
+    if (name) {
+        const regex = /^[0-9a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ ]+$/
+        validate = validateString(name) && regex.test(name)
+    }
+    if (email) validate = validate && validateEmail(email)
+    if (age) validate = validate && (age && age >= 0)
+    if ((gender !== null || gender < 0) && gender !== undefined) validate = false
 
-    const validate = validateString(name) && typeof age === 'number' && regex.test(name)
-
-    if (!validate) return res.status(400).send('Invalid input')
+    if (!validate) return res.status(400).send({
+        err: 'Invalid input',
+    })
 
     return next()
 }
@@ -43,7 +53,9 @@ function validateRegister(req, res, next) {
 function validateLogin(req, res, next) {
     const { username, password } = req.body
     const validate = validateString(username) && validateString(password)
-    if (!validate) return res.status(400).send('Invalid input')
+    if (!validate) return res.status(400).send({
+        err: 'Invalid Input',
+    })
     return next()
 }
 
