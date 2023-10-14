@@ -1,7 +1,7 @@
 const express = require('express')
 const { saltHash, randomPassword } = require('../helpers/hash')
 const {
-    getOne, deleteOne, updateOne, getMany, insertOne,
+    getOne, deleteOne, updateOne, getMany, insert,
 } = require('../helpers/knex')
 const { validateToken } = require('../middlewares/tokenValidate')
 
@@ -18,18 +18,19 @@ function validateRole(req, res, next) {
 }
 
 // eslint-disable-next-line consistent-return
-function handleResponse(res, data, err, json) {
+function handleResponse(res, data, err, sent) {
     if (err) return res.status(500).json({
         code: 500,
         err: 'Internal Server Error',
     })
 
-    if (data) return res.status(json.code).json(json)
+    if (data) return res.status(sent.code).json(sent)
 }
 
 router
-    .get('/', async (req, res) => {
-        const [data, err] = await getMany('users', req.query.limit, req.query.page, req.query.query ?? req.query.q)
+    .get('/', validateToken, async (req, res) => {
+        const [data, err] = await getMany('users', req.query.limit, req.query.page, req.query.query ?? req.query.q, true)
+
         handleResponse(res, data, err, {
             code: 200,
             data: {
@@ -40,38 +41,35 @@ router
 
 router
     // eslint-disable-next-line consistent-return
-    .post('/add', validateToken, validateRole, async (req, res) => {
+    .post('/add', validateRole, async (req, res) => {
         const {
             username, name, gender, age,
         } = req.body
         let { password } = req.body
-        let createdBy = 0
-        const [duplicatedUser, duplicateError] = await getOne('users', 'username', username)
-        handleResponse(res, duplicatedUser, duplicateError, {
+        const [duplicatedUser, duplicatedError] = await getOne('users', 'username', username)
+        // eslint-disable-next-line max-len
+        if (duplicatedUser || duplicatedError) return handleResponse(res, duplicatedUser, duplicatedError, {
             code: 409,
             err: 'User already exist',
         })
 
-        const [adminUser, err] = await getOne('users', 'username', res.locals.decodedJWT.username)
-        handleResponse(res, undefined, err)
-
-        createdBy = adminUser.id
         if (!password) password = randomPassword()
-
         const { hashedPassword, salt } = saltHash(password)
 
+        const d = new Date()
         const newUser = {
             username,
             password: hashedPassword,
             salt,
-            name: name ?? username,
-            gender: gender ?? null,
-            age: age ?? null,
-            createdBy,
+            name: name || username,
+            gender: gender || null,
+            age: age || null,
+            createdAt: d.toISOString().slice(0, 19).replace('T', ' '),
+            createdBy: res.locals.decodedJWT.id,
         }
 
-        const [data, insertErr] = await insertOne('users', newUser)
-        handleResponse(res, data, insertErr, newUser, {
+        const [insertData, insertErr] = await insert('users', newUser)
+        return handleResponse(res, insertData, insertErr, {
             code: 200,
             data: {
                 message: 'User created',
@@ -105,29 +103,35 @@ router
         })
 
         const { username } = res.locals.decodedJWT
-        if (user.username !== username) if (username !== 'assmin') return res.status(403).json({
+        if (username !== 'assmin') return res.status(403).json({
             code: 403,
             error: 'Permission denided',
         })
 
         const [deletedUser, deletedError] = await deleteOne('users', 'id', req.params.id)
         handleResponse(res, true, deletedError, {
+            code: 200,
             data: {
-                message: 'success',
+                message: 'User deleted',
                 deletedUser,
             },
         })
     })
     .put('/:id', validateToken, validateUser, async (req, res) => {
-        const { name, gender, age } = req.body
-        const [data, err] = await updateOne('users', 'id', req.params.id, {
-            name,
-            gender,
-            age,
-        })
+        const {
+            name, age, gender, email,
+        } = req.body
+        const putData = {}
+        if (name) putData.name = name
+        if (age) putData.age = age
+        if (gender >= 0) putData.gender = gender
+        if (email) putData.email = email
+
+        const [data, err] = await updateOne('users', 'id', req.params.id, putData)
         handleResponse(res, data, err, {
+            code: 200,
             data: {
-                message: 'success',
+                message: 'User updated',
                 data,
             },
         })
