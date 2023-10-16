@@ -29,13 +29,19 @@ function handleResponse(res, data, err, sent) {
 
 router
     .get('/', validateToken, async (req, res) => {
-        const [data, err] = await getMany('users', req.query.limit, req.query.page, req.query.query ?? req.query.q, true)
+        const col = ['id', 'name', 'username', 'age', 'email', 'createdAt']
+        const queryCol = ['name', 'username', 'age', 'email']
+        const [data, err] = await getMany('users', {
+            col,
+            limit: req.query.limit,
+            page: req.query.page,
+            query: req.query.q || req.query.query,
+            queryCol,
+        })
 
         handleResponse(res, data, err, {
             code: 200,
-            data: {
-                data,
-            },
+            data,
         })
     })
 
@@ -81,7 +87,12 @@ router
 router
     // eslint-disable-next-line consistent-return
     .get('/:id', async (req, res) => {
-        const [user, err] = await getOne('users', 'id', req.params.id)
+        const [user, err] = await getOne('users', {
+            col: ['id'],
+            condition: {
+                id: req.params.id,
+            },
+        })
         handleResponse(res, user, err, {
             code: 200,
             data: {
@@ -95,13 +106,6 @@ router
     })
     // eslint-disable-next-line consistent-return
     .delete('/:id', validateToken, async (req, res) => {
-        const [user, err] = await getOne('users', 'id', req.params.id)
-
-        handleResponse(res, !user, err, {
-            code: 404,
-            error: 'User not found',
-        })
-
         const { username } = res.locals.decodedJWT
         if (username !== 'assmin') return res.status(403).json({
             code: 403,

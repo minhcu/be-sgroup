@@ -1,8 +1,9 @@
+/* eslint-disable camelcase */
 const express = require('express')
 const knex = require('../database/connection')
 const { handleResponse } = require('../helpers/res')
 const {
-    getOne, deleteOne, updateOne,
+    getOne, getMany, deleteOne, updateOne,
 } = require('../helpers/knex')
 const { validateToken } = require('../middlewares/tokenValidate')
 
@@ -19,13 +20,7 @@ function validatePoll(req, res, next) {
 
 router
     .get('/', validateToken, async (req, res) => {
-        const limit = req.query.limit || 10
-        const page = req.query.page || 1
-        let offset = 0
-        const query = req.query.query || '%%'
-        if (page > 1) offset = limit * (page - 1)
-
-        const column = [
+        const col = [
             'polls.id',
             'polls.name',
             'polls.createdAt',
@@ -39,38 +34,24 @@ router
             `),
         ]
 
-        const itemsQuery = knex.select(column).from('polls').limit(limit).offset(offset)
-            .leftJoin('users', 'polls.createdBy', 'users.id')
-            .where(function () {
-                this.where('polls.name', 'like', query)
-                    .orWhere('polls.detail', 'like', query)
-            })
-            .groupBy('polls.id')
-        const countQuery = knex.select().from('polls').limit(limit).offset(offset)
-            .where(function () {
-                this.where('name', 'like', query)
-                    .orWhere('detail', 'like', query)
-            })
-            .count()
-        Promise.all([itemsQuery, countQuery])
-            .then(([items, count]) => res.status(200).json({
-                code: 200,
-                data: {
-                    items,
-                    count: count[0]['count(*)'],
-                },
-            }))
-            .catch(err => res.status(500).json({
-                code: 500,
-                err,
-            }))
+        const [data, err] = await getMany('polls', {
+            col,
+            limit: req.query.limit,
+            page: req.query.page,
+            query: req.query.q || req.query.query,
+            queryCol: ['polls.name', 'polls.detail'],
+        })
+
+        handleResponse(res, data, err, {
+            code: 200,
+            data,
+        })
     })
     .get('/:id', validateToken, async (req, res) => {
-        const colName = [
+        const col = [
             'polls.id',
             'polls.name',
             'polls.detail',
-            // á
             knex.raw(`
             JSON_ARRAYAGG(
                 JSON_OBJECT(
@@ -98,25 +79,17 @@ router
         `),
         ]
 
-        await knex.select(colName)
-            .from('polls')
-            .join('poll_options', 'polls.id', 'poll_options.poll_id')
-            .where('polls.id', req.params.id)
-            .groupBy('polls.id')
-        // eslint-disable-next-line no-return-assign
-            .then(data => {
-                const poll = data[0]
-                if (!poll) return res.status(404).json({
-                    code: 404,
-                    message: 'Poll not found',
-                })
+        const [data, err] = await getOne('polls', {
+            col,
+            condition: {
+                'polls.id': req.params.id,
+            },
+        })
 
-                return res.status(200).json({
-                    data: poll,
-                })
-            })
-        // eslint-disable-next-line no-return-assign
-            .catch(err => res.status(200).json(err))
+        handleResponse(res, data, err, {
+            code: 200,
+            data,
+        })
     })
     .delete('/:id', validateToken, async (req, res) => {
         const [data, err] = await deleteOne('polls', 'id', req.params.id)
@@ -179,56 +152,54 @@ router.put('/:id/update/:oid', async (req, res) => {
 
 // eslint-disable-next-line consistent-return
 router.post('/:id/vote/:oid', async (req, res) => {
-    let add = true
-
     // Poll must exist to vote
-    const [poll, pollErr] = await getOne('polls', 'id', req.params.id)
+    const [poll, pollErr] = await getOne('polls', {
+        col: ['id'],
+        condition: {
+            id: req.params.id,
+        },
+        method: 'post',
+    })
     if (!poll || pollErr) return handleResponse(res, true, pollErr, {
         code: 404,
         message: 'Poll not found',
     })
 
     // Option must exist to vote
-    const [o, oErr] = await getOne('poll_options', 'id', req.params.oid)
+    const [o, oErr] = await getOne('poll_options', {
+        col: ['id'],
+        condition: {
+            id: req.params.oid,
+        },
+    })
     if (!o || oErr) return handleResponse(res, true, oErr, {
         code: 404,
         message: 'Option not exist',
     })
 
-    // User already voted this option?
-    await knex('user_poll_options').where({
+    const condition = {
         poll_id: req.params.id,
         option_id: req.params.oid,
         user_id: res.locals.decodedJWT.id,
-    })
-        .then(data => {
-            if (!data.length) return
-            add = false
-            const newVoteData = data[0].is_voted ? 0 : 1
-            knex('user_poll_options').where({
-                poll_id: req.params.id,
-                option_id: req.params.oid,
-                user_id: res.locals.decodedJWT.id,
-            })
-                .update({
-                    is_voted: newVoteData,
-                })
-                .then(newData => res.status(200).json(newData))
-                .catch(err => res.status(200).json(err))
-        })
-        .catch(err => res.status(200).json(err))
-
-    if (add) {
-        const insertData = {
-            poll_id: req.params.id,
-            option_id: req.params.oid,
-            user_id: res.locals.decodedJWT.id,
-            is_voted: 1,
-        }
-        knex('user_poll_options').insert(insertData)
-            .then(data => res.status(200).json(data))
-            .catch(err => res.status(200).json(err))
     }
+
+    knex('user_poll_options').select('is_voted').where(condition).first()
+        .then(data => {
+            const insert = {
+                ...condition,
+                is_voted: data ? !data.is_voted : 1,
+            }
+            return knex('user_poll_options').insert(insert)
+                .onConflict(['poll_id', 'option_id', 'user_id'])
+                .merge({
+                    is_voted: insert.is_voted ? 1 : 0,
+                })
+        })
+        .then(data => res.status(200).json({
+            code: 200,
+            data,
+        }))
+        .catch(() => res.status(500).json('Internal Server Error'))
 })
 
 router.delete('/:id/delete/', async (req, res) => {

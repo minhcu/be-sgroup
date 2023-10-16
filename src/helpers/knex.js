@@ -5,9 +5,14 @@ function handleResponse(data, err) {
     return [data, err]
 }
 
-async function getOne(tableName, colName, condition) {
+async function getOne(table, config = {}) {
+    const {
+        col = '*', condition, method,
+    } = config
+    let getOneQuery = knex.select(col).from(table).where(condition)
+    if (table === 'polls' && method !== 'post') getOneQuery = getOneQuery.join('poll_options', 'polls.id', 'poll_options.poll_id').groupBy('polls.id')
     try {
-        const data = await knex.select().from(tableName).where(colName, condition).first()
+        const data = await getOneQuery.first()
         return handleResponse(data, undefined)
     } catch (err) {
         return handleResponse(undefined, err)
@@ -15,38 +20,37 @@ async function getOne(tableName, colName, condition) {
 }
 
 // eslint-disable-next-line consistent-return, default-param-last
-async function getMany(tableName, limit = 10, page = 0, query, getCount) {
+async function getMany(table, config = {}) {
     let offset = 0
+    const {
+        limit = 10, page = 1, col = '*', queryCol = '*',
+    } = config
+    let { query } = config
     if (page > 1) offset = limit * (page - 1)
     query = query ? `%${query}%` : '%%'
 
-    try {
-        let total
-        const items = await knex.select().from(tableName).limit(limit).offset(offset)
-        // NOTEs: This should be dynamic
-        // eslint-disable-next-line func-names
-            .where(function () {
-                this.where('username', 'like', query)
-                    .orWhere('name', 'like', query)
-                    .orWhere('age', 'like', query)
-                    .orWhere('email', 'like', query)
+    let itemsQuery = knex.select(col).from(table).limit(limit).offset(offset)
+        .where(builder => {
+            if (queryCol === '*') builder.where({})
+            else queryCol.forEach(colName => {
+                builder.orWhere(colName, 'like', query)
             })
-        if (getCount) {
-            total = await knex.select().from(tableName).count()
-                // NOTEs: This should be dynamic
-                // eslint-disable-next-line func-names
-                .where(function () {
-                    this.where('username', 'like', query)
-                        .orWhere('name', 'like', query)
-                        .orWhere('age', 'like', query)
-                        .orWhere('email', 'like', query)
-                })
-            total = total[0]['count(*)']
-        }
+        })
+    switch (table) {
+    case 'polls':
+        itemsQuery = itemsQuery.leftJoin('users', 'polls.createdBy', 'users.id').groupBy('polls.id')
+        break
+    default:
+        break
+    }
+    const countQuery = knex.select().from(table).count()
+
+    try {
+        const [items, total] = await Promise.all([itemsQuery, countQuery])
 
         return handleResponse({
             items,
-            total,
+            total: total[0]['count(*)'],
         }, undefined)
     } catch (err) {
         return handleResponse(undefined, err)
